@@ -337,37 +337,46 @@ public class BirtReportingProcessServiceImpl implements ReportingProcessService 
 
           log.debug("paramName: {}", paramName);
 
-          final var pValue = queryParams.get(paramName);
-          if (StringUtils.isBlank(pValue)) {
-            throw new PlatformDataIntegrityException(
-                "error.msg.reporting.error", "BIRT Parameter: " + paramName + " - not Provided");
-          }
+          // Skip parameters that are injected server-side after this loop
+          if (!paramName.equals("tenantUrl")
+              && !paramName.equals("userhierarchy")
+              && !paramName.equals("username")
+              && !paramName.equals("password")
+              && !paramName.equals("userid")) {
 
-          final int dataType = paramDefEntry.getDataType();
-          log.debug("addParametersToReport({} : {} : {})", paramName, pValue, dataType);
+            final var pValue = queryParams.get(paramName);
 
-          if (dataType == IParameterDefn.TYPE_INTEGER) {
-            task.setParameterValue(paramName, Integer.parseInt(pValue));
-          } else if (dataType == IParameterDefn.TYPE_FLOAT
-              || dataType == IParameterDefn.TYPE_DECIMAL) {
-            task.setParameterValue(paramName, Double.parseDouble(pValue));
-          } else if (dataType == IParameterDefn.TYPE_DATE
-              || dataType == IParameterDefn.TYPE_DATE_TIME) {
-            log.debug("ParamName: {}", paramName);
-            log.debug("ParamValue: {}", pValue);
-            SimpleDateFormat sdf = new SimpleDateFormat("dd MMMM yyyy", Locale.ENGLISH);
-            Date date = sdf.parse(pValue);
-            long millis = date.getTime();
-            java.sql.Date mySQLDate = new java.sql.Date(millis);
-            task.setParameterValue(paramName, mySQLDate);
-            // Logging the parsed date value for debugging
-            log.debug("Date parameter '{}' parsed and set to: {}", paramName, mySQLDate);
-          } else if (dataType == IParameterDefn.TYPE_BOOLEAN) {
-            task.setParameterValue(paramName, Boolean.parseBoolean(pValue));
-          } else {
-            log.debug("ParamName Unknown: {}", paramName);
-            log.debug("ParamValue Unknown: {}", pValue);
-            task.setParameterValue(paramName, pValue);
+            if (StringUtils.isBlank(pValue)) {
+              throw new PlatformDataIntegrityException(
+                  "error.msg.reporting.error", "BIRT Parameter: " + paramName + " - not Provided");
+            }
+
+            final int dataType = paramDefEntry.getDataType();
+            log.debug("addParametersToReport({} : {} : {})", paramName, pValue, dataType);
+
+            if (dataType == IParameterDefn.TYPE_INTEGER) {
+              task.setParameterValue(paramName, Integer.parseInt(pValue));
+            } else if (dataType == IParameterDefn.TYPE_FLOAT
+                || dataType == IParameterDefn.TYPE_DECIMAL) {
+              task.setParameterValue(paramName, Double.parseDouble(pValue));
+            } else if (dataType == IParameterDefn.TYPE_DATE
+                || dataType == IParameterDefn.TYPE_DATE_TIME) {
+              log.debug("ParamName: {}", paramName);
+              log.debug("ParamValue: {}", pValue);
+              SimpleDateFormat sdf = new SimpleDateFormat("dd MMMM yyyy", Locale.ENGLISH);
+              Date date = sdf.parse(pValue);
+              long millis = date.getTime();
+              java.sql.Date mySQLDate = new java.sql.Date(millis);
+              task.setParameterValue(paramName, mySQLDate);
+              // Logging the parsed date value for debugging
+              log.debug("Date parameter '{}' parsed and set to: {}", paramName, mySQLDate);
+            } else if (dataType == IParameterDefn.TYPE_BOOLEAN) {
+              task.setParameterValue(paramName, Boolean.parseBoolean(pValue));
+            } else {
+              log.debug("ParamName Unknown: {}", paramName);
+              log.debug("ParamValue Unknown: {}", pValue);
+              task.setParameterValue(paramName, pValue);
+            }
           }
         }
       } finally {
